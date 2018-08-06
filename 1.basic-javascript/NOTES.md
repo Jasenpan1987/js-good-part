@@ -393,3 +393,122 @@ function fade(id) {
   setTimeout(step, 100);
 }
 ```
+
+## 5.5 PseudoClassical
+
+### 5.5.1 What does the `new` prefix operator do?
+
+It does something like this:
+
+```js
+Function.prototype.new = function new() {
+  var that = Object.create(this.prototype),
+    result = this.apply(that, arguments);
+
+  return (
+    typeof result === "object" && result !== null
+  ) ? result : that;
+}
+
+function Student(id) {
+  this.id = id;
+}
+
+Student.prototype.study = function() {
+  console.log("Student " + this.id + " is studying");
+}
+
+var student1 = Student.new(1);
+```
+
+### 5.5.2 Pseudo Classical Inheritance
+
+```js
+function Foo(id) {
+  this.id = id;
+}
+
+Foo.prototype.greet = function() {
+  console.log("Hello, from Foo");
+};
+
+Foo.prototype.eat = function() {
+  console.log("Eating");
+};
+
+function Bar(id, name) {
+  this.id = id;
+  this.name = name;
+}
+
+Bar.prototype = new Foo();
+
+Bar.prototype.drink = function() {
+  console.log("drinking");
+};
+
+Bar.prototype.greet = function() {
+  console.log("Hello, from Bar");
+};
+
+Bar.prototype.constructor = Bar;
+
+var foo = new Foo(1);
+var bar = new Bar(2, "BAR");
+```
+
+## 5.6 Module Pattern
+
+**Javascript is NOT a classical language, so try to NOT use `new`**
+
+```js
+var singleton = (function(){
+  var privateVars;
+  function privateFunc() {
+    ...
+  }
+
+  return {
+    firstMethod: function(x) {
+      privateVars...
+      privateFunc(x)
+    },
+    secondMethod: function(a, b) {
+      privateVars...
+      privateFunc(a, b)
+    }
+  }
+}());
+```
+
+**Tips: if a function has more than 2 arguments, pass an object rather than individual arguments**
+
+- Name of the variables can be preserved
+- Can directly use JSON returned from an api as the argument
+
+## 5.6 Prototypal vs Functional
+
+rewrite the `Foo`, `Bar` to functional
+
+```js
+function foo(id) {
+  return {
+    id: id,
+    toString: function() {
+      return "Foo " + this.id;
+    }
+  };
+}
+
+function bar(id, name) {
+  var that = foo(id);
+  that.name = name;
+  that.test = function(testId) {
+    return testId === id;
+  };
+
+  return that;
+}
+```
+
+**Tips: The drawback of this method is it takes more memory than the prototypal inheritance**
