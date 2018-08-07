@@ -512,3 +512,116 @@ function bar(id, name) {
 ```
 
 **Tips: The drawback of this method is it takes more memory than the prototypal inheritance**
+
+# 6. Html and Javascript
+
+## 6.1 Advise to use javascript on page
+
+- use `<script src="...">` tag instead of plain `<script></script>` tags, because it can be cached and can be gzipped.
+- don't use `document.write` because it create security vonerbility and it interupt the page load.
+- always put the `<script>` tags on the bottom of the body, because the page don't have to wait until all the javascipt loaded and execute.
+- always use gzipped and concatenated script files to reduce the number and payload of the http request.
+
+## 6.2 DOM tree structure
+
+```html
+<html>
+  <body>
+    <h1>Hello</h1>
+    <p>Hello world</p>
+  </body>
+</html>
+```
+
+will be translated into (IE6 tree)
+
+```
+- #document      ===> document
+-- html          ===> document.documentElement
+---- head
+---- body        ===> document.body
+-------- h1
+------------ #text
+-------- p
+------------ #text
+```
+
+- each node has pointers to other nodes, for example `h1` has `firstChild` and `lastChild` pointing to the `#text` and there are sibling pointers, `p` has `previousSibling` pointing to `h1` and `h1` has `nextSibling` pointing to `p`.
+
+```js
+function walkTheDOM(node, func) {
+  func(node);
+  node = node.firstChild;
+  while (node) {
+    walkTheDOM(node, func);
+    node = node.nextSibling;
+  }
+}
+```
+
+## 6.3 Retrieving node
+
+- `document.getElementById(id)`
+- `document.getElementsName(name)`
+- `node.getElementsByTagName(tagName)`
+
+Once you have the node, you can manipulate the DOM node by
+
+- modifying the attributes:
+  `img.src = "foo.png"`
+- changing the style of the DOM node:
+  `div.className = "foo"` or `div.style.backgroundColor = "red"`
+
+Css and DOM has different naming convensions:
+
+- `background-color` vs `backgroundColor`
+- `font-size` vs `fontSize`
+- `z-index` vs `zIndex`
+- `float` vs `cssFloat`
+  ...
+
+And also, we can make new node
+
+- `document.createElement(tagName)`
+- `document.createTextNode(text)`
+- `div.cloneNode()` will give you an individual node div element
+- `div.cloneNode(true)` will clone a div node and everything inside the div
+
+**The cloned nodes are not attached to the document**
+
+And we can link them by using
+
+- `node.appendChild(newNode)`
+- `node.insertBefore(newNode, sibling)`
+- `node.replaceChild(newNode, oldNode)`
+- `oldNode.parentNode.replaceChild(newNode, oldNode)`
+
+And also we can remove node
+
+- `node.removeChild(oldNode)`
+- `oldNode.parent.removeChild(oldNode)`
+  - It returns you the removed node
+  - Remember to also remove the eventHandlers attached to the node
+
+## 6.4 innerHTML vs DOM insertion
+
+- innerHTML create security issues
+- DOM insertion is slower and sometimes harder to maintain.
+
+## 6.5 Events
+
+### 6.5.1 Add event listener to DOM
+
+- Netscape `node["on" + type] = func`
+- Microsoft `node.attachEvent("on" + type, func)`
+- W3C `node.addEventListener(type, func, false)`
+
+### 6.5.2 Trickling and Bubbling
+
+- Trickling is an event capturing pattern which provides compatibility with the Netscape 4 model, **avoid it!**
+- Bubbling means the event is given to the target, and then its parent, and then its parent, and so on until the event is cancelled.
+
+- Cancel Bubbling
+  - `e.stopPorpagation()`
+
+**Tips: DOM is very bad designed, so use any library to manipulate the DOM rather than manipulate the DOM directly.**
