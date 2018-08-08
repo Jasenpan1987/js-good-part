@@ -625,3 +625,157 @@ And also we can remove node
   - `e.stopPorpagation()`
 
 **Tips: DOM is very bad designed, so use any library to manipulate the DOM rather than manipulate the DOM directly.**
+
+# 7. ES5
+
+## 7.1 New Syntax
+
+### 7.1.1 trailing commas
+
+- In es5, array and object literals can have trailing commas, and it can compute the length property correctly (use to be a bug in IE6).
+
+### 7.1.2 reserved word
+
+- In es5, you can use reserved words in object literals like this without errors
+
+```js
+var obj = {
+  return: true,
+  class: "foo",
+  float: "left"
+};
+
+obj.return; // true
+```
+
+### 7.1.3 getters and setters
+
+```js
+function person() {
+  var firstName = "Foo";
+  var lastName = "Bar";
+  return {
+    get fullname() {
+      return firstName + " " + lastName;
+    },
+    set fullname(name) {
+      firstName = name.split(" ")[0];
+      lastName = name.split(" ")[1];
+    }
+  };
+}
+
+var p = person;
+p.fullname; // "Foo Bar"
+p.fullname = "John Doe";
+p.fullname; // "John Doe"
+```
+
+**Tips: don't do unnecessary stuff in getter and setters**
+
+### 7.1.4 Constants (use to be global variables)
+
+- Infinity
+- NaN
+- undefined
+
+**And now you can't change them anymore, and that fixed a lot of security issues.**
+
+## 7.2 New methods
+
+- `Function.prototype.bind`
+- `String.prototype.trim`
+- `Array.prototype.isArray`
+- `Array.prototype.every`
+- `Array.prototype.filter`
+- `Array.prototype.forEach`
+- `Array.prototype.indexOf`
+- `Array.prototype.lastIndexOf`
+- `Array.prototype.map`
+- `Array.prototype.reduce`
+- `Array.prototype.reduceRight`
+- `Array.prototype.some`
+- `Date.prototype.now` Now 100% accurate, sometimes got latency
+- `Date.prototype.toISOString` based on UTC time
+- `Object.prototype.keys` only get the data members
+- `Object.prototype.create`
+
+## 7.3 Meta object API
+
+Object has two types of properties:
+
+- Data properties
+- Accessor properties (getter and setter)
+
+Each attribute has the following properties:
+
+- value: any js values
+- writable: boolean
+- enumerable: boolean
+- configurable: boolean
+- get (only for accessor properties)
+- set (only for accessor properties)
+
+```js
+// the two obj are exactly the same
+var obj = { foo: "bar" };
+var obj = Object.create(Object.prototype);
+Object.defineProperty(obj, "foo", {
+  value: "bar",
+  writable: true,
+  enumerable: true,
+  configurable: true
+});
+```
+
+### 7.3.1 Meta API
+
+- `Object.defineProperty(obj, key, descriptor)`
+- `Object.defineProperties(obj, objOfDescriptors)`
+- `Object.getOwnPropertyDescriptor(obj, key)`
+- `Object.getOwnPropertyNames(obj)`
+- `Object.preventExtensions(obj)`
+- `Object.seal(obj)`
+- `Object.freeze(obj)` creates immutable objects
+- `Object.isExtensible(obj)`
+- `Object.isSealed(obj)`
+- `Object.isFrozen(obj)`
+
+```js
+function replacePrototype(object, prototype) {
+  var result = Object.create(prototype);
+  Object.getOwnPropertyNames.forEach(
+    function(key) {
+      Object.defineProperty(
+        result,
+        key,
+        Object.getOwnPropertyDescriptor(object, key);
+      );
+    }
+  );
+  return result;
+}
+```
+
+## 7.4 Strict Mode
+
+- 'use strict'
+  - file form: the first statement in a file
+  - function form: the first statement in a function (only use this on browser code because of the file concatenation)
+
+The following functions can tell you if you are currently in strict mode
+
+```js
+function inStrictMode() {
+  return (function() {
+    return !this;
+  })();
+}
+
+function strictModeImplemented() {
+  return (function() {
+    "use strict";
+    return !this;
+  })();
+}
+```
