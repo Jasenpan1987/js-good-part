@@ -333,7 +333,7 @@ function concat(gen1, gen2) {
   };
 }
 
-// Q19
+// *Q18.1
 // write concatMulti that takes any number of generators and
 // perform the same action like the concat
 function concatMulti() {
@@ -353,5 +353,170 @@ function concatMulti() {
       return value;
     }
     return undefined;
+  };
+}
+
+// Q19
+// write a function gensymf that makes a function that generates
+// unique symbols
+// var geng = gensymf("G")
+// geng() // "G1"
+// geng() // "G2"
+// var genh = gensymf("H")
+// genh() // "H1"
+// genh() // "H2"
+function gensymf(sym) {
+  var gen = from(1);
+  return function() {
+    return sym + "" + gen();
+  };
+}
+
+// Q20
+// write a function fibonaccif that returns a generator that
+// will keep generate the next fibonacci number
+// var fib = fibonaccif()
+// fib(); // 0
+// fib(); // 1
+// fib(); // 1
+// fib(); // 2
+// fib(); // 3
+// fib(); // 5
+// fib(); // 8
+function fibonaccif(num1, num2) {
+  return function() {
+    var next = num1;
+    num1 = num2;
+    num2 += next;
+    return next;
+  };
+}
+
+// Q21
+// write a function that returns an object that implements
+// an up/down counter, hiding the counter
+// var obj = counter(10)
+// var up = obj.up
+// var down = obj.down
+// up() // 11
+// up() // 12
+// down() // 11
+function counter(start) {
+  var ctr = start;
+  return {
+    up: function() {
+      ctr += 1;
+      return ctr;
+    },
+    down: function() {
+      ctr -= 1;
+      return ctr;
+    }
+  };
+}
+
+// Q22
+// make a revocable function that takes a binary function,
+// and returns an object containing an invoke function that
+// can invoke the binary function, and a revoke function that
+// disable the invoke function
+// var rev = revocable(add);
+// var addInv = rev.invoke;
+// addInv(3, 4) // 7
+// rev.revoke()
+// addInv(6, 2) // undefined
+function revocable(binaryFunc) {
+  var isInvocable = true;
+  return {
+    invoke: function() {
+      var args = Array.prototype.slice.call(arguments, 0);
+      if (isInvocable) {
+        return binaryFunc.apply(null, args);
+      }
+      return undefined;
+    },
+    revoke: function() {
+      isInvocable = false;
+    }
+  };
+}
+
+function revocable2(binaryFunc) {
+  var func = binaryFunc;
+  return {
+    invoke: function() {
+      if (typeof func === "function") {
+        var args = Array.prototype.slice.call(arguments, 0);
+        return func.apply(null, args);
+      }
+      return undefined;
+    },
+    revoke: function() {
+      func = undefined;
+    }
+  };
+}
+
+// Q23
+// write a function m that takes a value and an optional source string
+// and returns them in an object
+// m(1) // { value: 1, source: "1" }
+// m(Math.PI, "pi") // { value: 3.141592..., source: "pi" }
+function m(value, source) {
+  if (source === undefined) {
+    source = value;
+  }
+
+  return {
+    value: value,
+    source: typeof source === "string" ? source : String(source)
+  };
+}
+
+// Q24
+// write a function addm that add two m objects and returns an m object
+// addm(m(3), m(4)) // { value: 7, source: "(3 + 4)" }
+// addm(m(3, "foo"), m(4, "bar")) // { value: 7, source: "(foo + bar)" }
+function addm(m1, m2) {
+  return m(m1.value + m2.value, "(" + m1.source + " + " + m2.source + ")");
+}
+
+// Q25
+// write a function liftm that takes a binary function and a string and
+// returns a function that act as m objects.
+// var addlfm = liftm(add, "+")
+// addlfm(m(3), m(4)) // { value: 7, source: '(3 + 4)' }
+// var mullfm = liftm(mul, "*")
+// mullfm(m(3), m(4)) // { value: 7, source: '(3 * 4)' }
+function liftm2(binaryFunc, str) {
+  return function(m1, m2) {
+    return m(
+      binaryFunc(m1.value, m2.value),
+      "(" + m1.source + " " + str + " " + m2.source + ")"
+    );
+  };
+}
+
+// Q26
+// modify liftm so that the function it produces can take either
+// numbers or m objects
+// var addlfm = liftm(add, "+")
+// addlfm(3, 4) // { value: 7, source: '(3 + 4)' }
+function liftm(binaryFunc, str) {
+  function checkM(m) {
+    return m.value !== undefined && typeof m.source === "string";
+  }
+  return function(m1, m2) {
+    if (!checkM(m1)) {
+      m1 = m(m1);
+    }
+    if (!checkM(m2)) {
+      m2 = m(m2);
+    }
+
+    return m(
+      binaryFunc(m1.value, m2.value),
+      "(" + m1.source + " " + str + " " + m2.source + ")"
+    );
   };
 }
