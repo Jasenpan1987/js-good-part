@@ -159,3 +159,199 @@ function limit(binaryFunc, times) {
     return undefined;
   };
 }
+
+// Q11
+// write a from function that produces a generator that will
+// produce a series of values
+// var index = from(0)
+// index() // 1
+// index() // 2
+function from(start) {
+  return function() {
+    var next = start;
+    start += 1;
+    return next;
+  };
+}
+
+// Q12
+// write a to function that takes a generator and an end value
+// and will produce a generator that produce up to that limit
+// var index = to(from(1), 3)
+// index() // 1
+// index() // 2
+// index() // undefined
+function to(gen, limit) {
+  return function() {
+    var result = gen();
+    if (result < limit) {
+      return result;
+    }
+    return undefined;
+  };
+}
+
+// Q13
+// write a fromTo function that produce a generator that will
+// produce a value in a range
+// var index = fromTo(0, 3);
+// index() // 0
+// index() // 1
+// index() // 2
+// index() // undefined
+function fromTo(start, end) {
+  return function() {
+    var next = start;
+    start += 1;
+    if (next < end) {
+      return next;
+    }
+    return undefined;
+  };
+}
+
+function fromTo2(start, end) {
+  return to(from(start), end);
+}
+
+// Q14
+// write an element function that takes an array and a
+// generator that will produce elements from the array
+// var elem = element(["a", "b", "c"], from(1, 3))
+// elem() // "b"
+// elem() // "c"
+// elem() // undefined
+function element(arr, gen) {
+  return function() {
+    var idx = gen();
+
+    return idx || idx === 0 ? arr[idx] : undefined;
+  };
+}
+
+// Q15
+// modify the element function, so the generator function is
+// optional. If the generator is not provided, each element
+// of the array will be produced
+// var elem = element(["a", "b"])
+// elem() // "a"
+// elem() // "b"
+// elem() // undefined
+function element(arr, gen) {
+  // gen = (gen && typeof gen === "function") || fromTo(0, arr.length); // bad
+  if (!gen || typeof gen !== "function") {
+    // always be explicit, easier to read and modify
+    gen = fromTo(0, arr.length);
+  }
+
+  return function() {
+    var idx = gen();
+    return idx || idx == 0 ? arr[idx] : undefined;
+  };
+}
+
+// Q16
+// write a collect function that takes a generator and an array and produce a
+// function that will collect the result in the array
+// var arr = [];
+// var col = collect(fromTo(0, 2), arr);
+// col() // 0
+// col() // 1
+// col() // undefined
+// arr // [0, 1]
+function collect(gen, arr) {
+  return function() {
+    var value = gen();
+    if (value !== undefined) {
+      arr.push(value);
+    }
+    return value;
+  };
+}
+
+// Q17
+// write a filter function, that takes a generator and a predicate and produce a
+// generator that only return the values that passes the predicate function
+// var fil = filter(fromTo(0, 5), function third(val) {
+//   return val % 3 === 0;
+// });
+// fil() // 0
+// fil() // 3
+// fil() // undefined
+function filter(gen, predicate) {
+  return function exec(val) {
+    var value = gen();
+    if (value === undefined || predicate(value)) {
+      return value;
+    }
+    value = exec(value);
+
+    return value;
+  };
+}
+
+function filter2(gen, predicate) {
+  return function() {
+    var value;
+    do {
+      value = gen();
+    } while (value !== undefined && predicate(value));
+    return value;
+  };
+}
+
+function filter3(gen, predicate) {
+  return function recur() {
+    var value = gen();
+    if (value === undefined || predicate(value)) {
+      return value;
+    }
+
+    return recur();
+  };
+}
+
+// Q18
+// write a concat function that takes two generators and produce a generator
+// which combines the two generator in sequence
+// var con = concat(fromTo(0, 3), fromTo(0, 2))
+// con() // 0
+// con() // 1
+// con() // 2
+// con() // 0
+// con() // 1
+// con() // undefined
+function concat(gen1, gen2) {
+  var gen = gen1;
+  return function() {
+    var value = gen();
+    if (value !== undefined) {
+      gen = gen2;
+      value = gen();
+    }
+    return value;
+  };
+}
+
+// Q19
+// write concatMulti that takes any number of generators and
+// perform the same action like the concat
+function concatMulti() {
+  var gens = Array.prototype.slice.call(arguments, 0);
+  var nextGen = element(gens);
+  var gen = nextGen();
+
+  return function recur() {
+    if (gen !== undefined) {
+      var value = gen();
+      if (value === undefined) {
+        gen = nextGen();
+        if (gen !== undefined) {
+          return recur();
+        }
+      }
+      return value;
+    }
+    return undefined;
+  };
+}
