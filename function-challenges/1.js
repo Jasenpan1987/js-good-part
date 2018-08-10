@@ -520,3 +520,111 @@ function liftm(binaryFunc, str) {
     );
   };
 }
+
+// Q27
+// write an exp function that evaluate simple array expressions
+// var sae = [mul, 3, 4]
+// exp(sae) // 12
+// exp(3) // 3
+function exp(arr) {
+  if (Array.isArray(arr)) {
+    return arr[0](arr[1], arr[2]);
+  }
+  return arr;
+}
+
+// *Q27.1
+// modify the exp function that it can take nested array expressions
+// var nae = exp([Math.sqrt, [add, [add, 4, 12], [sqr, 3]]]); // 5
+function exp(arrOrValue) {
+  if (Array.isArray(arrOrValue)) {
+    return arrOrValue[0](exp(arrOrValue[1]), exp(arrOrValue[2]));
+  }
+  return arrOrValue;
+}
+
+// Q28
+// write a function addg that adds from many invokations until it sees
+// an empty invokation
+// addg() // undefined
+// addg(2)() // 2
+// addg(3)(4)() // 7
+// addg(5)(6)(2)() // 13
+function addg(num) {
+  var sum = num;
+  if (num === undefined) {
+    return undefined;
+  }
+  return function addToSum(x) {
+    if (x !== undefined) {
+      num += x;
+      return addToSum;
+    }
+    return sum;
+  };
+}
+
+// Q29
+// write a liftg function that will take a binary function
+// and apply it to many arguments
+// liftg(mul)() // undefined
+// liftg(mul)(3)() // 3
+// liftg(mul)(3)(4)() // 12
+// liftg(mul)(3)(0)(4)() // 0
+function liftg(op) {
+  var result;
+
+  return function fun1(x) {
+    if (x === undefined) {
+      return undefined;
+    }
+    result = x;
+    return function run2(y) {
+      if (y === undefined) {
+        return result === x ? x : result;
+      }
+      result = op(result, y);
+      return run2;
+    };
+  };
+}
+
+// Q30
+// write a function arrayg that will build an array
+// from many invocations
+// arrayg() // []
+// arrayg(3)() // [3]
+// arrayg(4)(6)() // [4, 6]
+function arrayg(first) {
+  var arr = [];
+  function more(next) {
+    if (next === undefined) {
+      return arr;
+    }
+    arr.push(next);
+    more(next);
+  }
+  return more(first);
+}
+
+// Q31
+// write a function continuize, that takes a unary function
+// and returns a function that takes a callback and an argument
+// var sqrtc = continuize(Math.sqrt);
+// sqrtc(console.log, 81);
+function continuize(func) {
+  return function(cb, num) {
+    return cb(func(num));
+  };
+}
+var sqrtc = continuize(Math.sqrt);
+sqrtc(console.log, 81);
+
+// *Q30.1
+// modify the continuize function that the function it returns
+// can take multiple arguments
+function continuize(func) {
+  return function(cb, ...args) {
+    return cb(func(...args));
+  };
+}

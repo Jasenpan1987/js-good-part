@@ -779,3 +779,101 @@ function strictModeImplemented() {
   })();
 }
 ```
+
+# \*Promise Study Notes
+
+```js
+function fakeAPI1() {
+  return new Promise(resolve => {
+    setTimeout(() => {
+      resolve("foo1");
+    }, 1000);
+  });
+}
+
+function fakeAPI2() {
+  return new Promise((resolve, reject) => {
+    setTimeout(() => {
+      reject("foo2");
+    }, 2000);
+  });
+}
+
+function fakeAPI3() {
+  return new Promise(resolve => {
+    setTimeout(() => {
+      resolve("foo3");
+    }, 3000);
+  });
+}
+async function getAPI() {
+  const foo = fakeAPI3();
+  console.log(await foo);
+  const foo2 = fakeAPI2();
+  console.log(await foo2);
+  const foo3 = fakeAPI1();
+  console.log(await foo3);
+}
+
+async function getAPI2() {
+  const [foo, foo2, foo3] = await Promise.all([
+    fakeAPI1(),
+    fakeAPI2(),
+    fakeAPI3()
+  ]);
+  console.log(foo);
+  console.log(foo2);
+  console.log(foo3);
+}
+
+async function getAPI3() {
+  let getApis = [fakeAPI3, fakeAPI2, fakeAPI1];
+
+  for (let fakeApi of getApis) {
+    fakeApi().then(console.log);
+  }
+}
+
+function resolvePromisesParalle(promiseArr) {
+  const results = [];
+  for (let promise of promiseArr) {
+    results.push(
+      promise()
+        .then(x => x)
+        .catch(err => {
+          undefined;
+        })
+    );
+  }
+  return results;
+}
+
+// Promise.all with fallback value
+function allWithFallback(promiseArr, placeHolder) {
+  const newPromiseArr = promiseArr.map(p =>
+    p.catch(err => {
+      if (typeof placeHolder !== "function") {
+        return placeHolder;
+      }
+      return placeHolder(err);
+    })
+  );
+  return Promise.all(newPromiseArr);
+}
+
+// how to use
+allWithFallback([fakeAPI3(), fakeAPI2(), fakeAPI1()]); // ["foo", undefined, "foo3"]
+
+allWithFallback([fakeAPI3(), fakeAPI2(), fakeAPI1(), "placeholder"] // ["foo", "placeholder", "foo3"]
+
+allWithFallback([fakeAPI3(), fakeAPI2(), fakeAPI1(), err => err === "foo2" ? "FOO2" : "placeholder"]// ["foo", "FOO2", "foo3"]
+
+// have the same behavior with Promise.all
+allWithFallback([fakeAPI3(), fakeAPI2(), fakeAPI1()], x => {
+  throw x + " --";
+})
+  .then(apis => console.log(apis))
+  .catch(err => {
+    console.log("err:: ", err);
+  });
+```
