@@ -877,3 +877,69 @@ allWithFallback([fakeAPI3(), fakeAPI2(), fakeAPI1()], x => {
     console.log("err:: ", err);
   });
 ```
+
+## 7.5 A "Hacking" Exercise
+
+Given that you have the following method implementation, but somehow it got a security vulnerability. Suppose `_arr` is a private variable, and you don't want people to access it, and the only way you can `set` and `get` the elements from the `_arr` is by calling the interface that the return value from `vector` exposes.
+
+How can I get the entire `_arr` by calling the interfaces?
+
+```js
+function vector() {
+  var _arr = [];
+  return {
+    append: function(value) {
+      _arr.push(value);
+    },
+    store: function(index, value) {
+      _arr[index] = value;
+    },
+    get: function(index) {
+      return _arr[index];
+    }
+  };
+}
+```
+
+**hint1: the array methods can also be accessed by calling arr["concat"]**
+
+**hint2: you can only access the array inside the function**
+
+### Solution:
+
+```js
+var myVector = vector();
+myVector.append(7);
+myVector.store(1, 8);
+// [7, 8]
+var stash;
+myVector.store("push", function() {
+  stash = this;
+});
+myVector.append();
+console.log(stash);
+```
+
+This example exposes two vulnerability of the javascript language:
+
+- 1.  there is no acutal `Array` defined in this language, array in javascript is defined as an `Object`, so that the index `i` doesn't have to be an integer, it can be anything.
+- 2.  the binding of a function is defined dynamically, and `this` is defined when the function getting called rather than when the function is defined.
+
+### Correction
+
+```js
+function vector() {
+  var _arr = [];
+  return {
+    append: function(value) {
+      _arr[_arr.length] = value;
+    },
+    store: function(index, value) {
+      _arr[+index] = value;
+    },
+    get: function(index) {
+      return _arr[+index];
+    }
+  };
+}
+```

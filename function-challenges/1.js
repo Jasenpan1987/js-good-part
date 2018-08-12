@@ -617,8 +617,6 @@ function continuize(func) {
     return cb(func(num));
   };
 }
-var sqrtc = continuize(Math.sqrt);
-sqrtc(console.log, 81);
 
 // *Q30.1
 // modify the continuize function that the function it returns
@@ -628,3 +626,38 @@ function continuize(func) {
     return cb(func(...args));
   };
 }
+
+// Q31
+// make an array wrapper object with the method get, store and
+// append, that the attackers can not access the private array
+// var myVector = vector();
+// myVector.append(7);
+// myVector.store(1, 8); // (index, value)
+// console.log(myVector.get(0)); // 7
+// console.log(myVector.get(1)); // 8
+function vector() {
+  var _arr = [];
+  return {
+    append: function(value) {
+      _arr.push(value);
+    },
+    store: function(index, value) {
+      _arr[index] = value;
+    },
+    get: function(index) {
+      return _arr[index];
+    }
+  };
+}
+
+// var myVector = vector();
+// myVector.append(7);
+// myVector.store(1, 8); // (index, value)
+// // myVector.get("entries")[0];
+// var stash;
+// myVector.store("push", function() {
+//   stash = this;
+// }); // 7
+// myVector.append();
+// console.log(stash);
+// myVector.get("concat")("");
