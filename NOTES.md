@@ -943,3 +943,214 @@ function vector() {
   };
 }
 ```
+
+## 7.6 Another "Hacking" Exercise
+
+Make a function that makes a publish/subscribe object.
+It will reliably deliver all publication to all the subscribers in the correct order.
+
+```js
+// var myPubSub = pubsub();
+// myPubSub.subscribe(log);
+// myPubSub.publish("It works"); // log("It works")
+```
+
+```js
+function pubsub() {
+  var _subscribers = [];
+  return {
+    subscribe: function(callback) {
+      _subscribers.push(callback);
+    },
+    publish: function(message) {
+      var idx = 0,
+        len = _subscribers.length;
+      for (; idx < len; idx += 1) {
+        _subscribers[idx](message);
+      }
+    }
+  };
+}
+```
+
+The solution exposes a couple of vulnerabilities and we will fix them one by one
+
+### hack 1: Break the code
+
+```js
+var myPubSub = pubsub();
+myPubSub.subscribe();
+myPubSub.subscribe(x => console.log("sub4::", x));
+myPubSub.subscribe(x => console.log("sub5::", x));
+myPubSub.publish("It works");
+```
+
+The subscribers will not be able to get called during the publish because the first subscription has an error.
+
+### Fix 1:
+
+```js
+function pubsub() {
+  var _subscribers = [];
+  return {
+    subscribe: function(callback) {
+      _subscribers.push(callback);
+    },
+    publish: function(message) {
+      var idx = 0,
+        len = _subscribers.length;
+      for (; idx < len; idx += 1) {
+        try {
+          _subscribers[idx](message);
+        } catch (ignore) {}
+      }
+    }
+  };
+}
+```
+
+### hack 2: change the publish method
+
+```js
+myPubSub.publish = undefined;
+myPubSub.publish("It works");
+```
+
+by setting the publish method to `undefined` or something else, the publish call will causing errors or undesired behaviors.
+
+### Fix 2:
+
+```js
+function pubsub() {
+  var _subscribers = [];
+  return Object.freeze({
+    subscribe: function(callback) {
+      _subscribers.push(callback);
+    },
+    publish: function(message) {
+      var idx = 0,
+        len = _subscribers.length;
+      for (; idx < len; idx += 1) {
+        try {
+          _subscribers[idx](message);
+        } catch (ignore) {}
+      }
+    }
+  });
+}
+```
+
+### hack 3: get the reference to the `_subscribers` array and modify it.
+
+```js
+var myPubSub = pubsub();
+
+myPubSub.subscribe(function(x) {
+  console.log("sub1::", x);
+});
+
+myPubSub.subscribe(function() {
+  // this.length = 0; // attack 1: none of the subscriber will receive the message
+  // attack 2: all the later subscribers will run the function the attacker defined
+  for (var i = 0; i < this.length; i += 1) {
+    this[i] = function(x) {
+      console.log("haha now you subscribe to me!");
+    };
+  }
+});
+
+myPubSub.subscribe(function(x) {
+  console.log("sub2::", x);
+});
+
+myPubSub.subscribe(function(x) {
+  console.log("sub3::", x);
+});
+
+myPubSub.publish("hello");
+```
+
+### Fix 3:
+
+```js
+function pubsub() {
+  var _subscribers = [];
+  var _isPublishing = false;
+  return Object.freeze({
+    subscribe: function(callback) {
+      _subscribers.push(callback);
+    },
+    publish: function(message) {
+      // now we avoid using index to iterate the _subscribers
+      _isPublishing = true;
+      _subscribers.forEach(function(s) {
+        try {
+          s(message);
+        } catch (ignore) {}
+      });
+      _isPublishing = false;
+    }
+  });
+}
+```
+
+### hack 4: changing the order of the message
+
+```js
+var myPubSub = pubsub();
+
+function limit(binaryFunc, times) {
+  var calledCount = 0;
+  return function(arg1, arg2) {
+    calledCount += 1;
+    if (calledCount <= times) {
+      return binaryFunc(arg1, arg2);
+    }
+    return undefined;
+  };
+}
+
+myPubSub.subscribe(function(x) {
+  console.log("sub1::", x);
+});
+
+myPubSub.subscribe(
+  limit(function() {
+    myPubSub.publish("Out of order");
+  }, 1)
+);
+
+myPubSub.subscribe(function(x) {
+  console.log("sub2::", x);
+});
+
+myPubSub.subscribe(function(x) {
+  console.log("sub3::", x);
+});
+
+myPubSub.publish("hurry");
+```
+
+### Fix 4
+
+```js
+fix;
+function pubsub() {
+  var _subscribers = [];
+  return Object.freeze({
+    subscribe: function(callback) {
+      _subscribers.push(callback);
+    },
+    publish: function(message) {
+      // now we avoid using index to iterate the _subscribers
+      _subscribers.forEach(function(s) {
+        try {
+          setTimeout(function() {
+            s(message);
+          }, 0);
+        } catch (ignore) {}
+      });
+    }
+  });
+}
+```

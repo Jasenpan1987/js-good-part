@@ -661,3 +661,202 @@ function vector() {
 // myVector.append();
 // console.log(stash);
 // myVector.get("concat")("");
+
+// More secured vector implementation
+function vector() {
+  var _arr = [];
+  return {
+    append: function(value) {
+      _arr[_arr.length] = value;
+    },
+    store: function(index, value) {
+      _arr[+index] = value;
+    },
+    get: function(index) {
+      return _arr[+index];
+    }
+  };
+}
+
+// Q32
+// Make a function that makes a publish/subscribe object.
+// It will reliably deliver all publication to all the
+// subscribers in the correct order.
+// var myPubSub = pubsub();
+// myPubSub.subscribe(log);
+// myPubSub.publish("It works"); // log("It works")
+// function pubsub() {
+//   var _subscribers = [];
+//   return {
+//     subscribe: function(callback) {
+//       _subscribers.push(callback);
+//     },
+//     publish: function(message) {
+//       var idx = 0,
+//         len = _subscribers.length;
+//       for (; idx < len; idx += 1) {
+//         _subscribers[idx](message);
+//       }
+//     }
+//   };
+// }
+
+// var myPubSub = pubsub();
+// myPubSub.subscribe(x => console.log("sub1::", x));
+// myPubSub.subscribe(x => console.log("sub2::", x));
+// myPubSub.subscribe(x => console.log("sub3::", x));
+// myPubSub.publish("It works"); // log("It works")
+
+// let's hack it!
+// hack 1:
+// myPubSub.subscribe();
+// myPubSub.subscribe(x => console.log("sub4::", x));
+// myPubSub.subscribe(x => console.log("sub5::", x));
+// myPubSub.publish("It works"); // log("It works")
+// // subscriber 4 and 5 won't receive any messages
+// // because the program got a exception
+// // fix:
+// function pubsub() {
+//   var _subscribers = [];
+//   return {
+//     subscribe: function(callback) {
+//       _subscribers.push(callback);
+//     },
+//     publish: function(message) {
+//       var idx = 0,
+//         len = _subscribers.length;
+//       for (; idx < len; idx += 1) {
+//         try {
+//           _subscribers[idx](message);
+//         } catch (ignore) {}
+//       }
+//     }
+//   };
+// }
+
+// hack 2:
+// myPubSub.publish = undefined;
+// myPubSub.publish("It works");
+// will give error again
+
+// fix:
+// function pubsub() {
+//   var _subscribers = [];
+//   return Object.freeze({
+//     subscribe: function(callback) {
+//       _subscribers.push(callback);
+//     },
+//     publish: function(message) {
+//       var idx = 0,
+//         len = _subscribers.length;
+//       for (; idx < len; idx += 1) {
+//         try {
+//           _subscribers[idx](message);
+//         } catch (ignore) {}
+//       }
+//     }
+//   });
+// }
+
+// hack 3:
+// var myPubSub = pubsub();
+
+// myPubSub.subscribe(function(x) {
+//   console.log("sub1::", x);
+// });
+
+// // here, this referes to the caller which is the array of subscribers
+// myPubSub.subscribe(function() {
+//   // this.length = 0; // attack 1: none of the subscriber will receive the message
+//   // attack 2: all the later subscribers will run the function the attacker defined
+//   for (var i = 0; i < this.length; i += 1) {
+//     this[i] = function(x) {
+//       console.log("haha now you subscribe to me!");
+//     };
+//   }
+// });
+
+// myPubSub.subscribe(function(x) {
+//   console.log("sub2::", x);
+// });
+
+// myPubSub.subscribe(function(x) {
+//   console.log("sub3::", x);
+// });
+
+// myPubSub.publish("hello");
+
+// fix:
+function pubsub() {
+  var _subscribers = [];
+  var _isPublishing = false;
+  return Object.freeze({
+    subscribe: function(callback) {
+      _subscribers.push(callback);
+    },
+    publish: function(message) {
+      // now we avoid using index to iterate the _subscribers
+      _isPublishing = true;
+      _subscribers.forEach(function(s) {
+        try {
+          s(message);
+        } catch (ignore) {}
+      });
+      _isPublishing = false;
+    }
+  });
+}
+
+// hack 4:
+var myPubSub = pubsub();
+
+function limit(binaryFunc, times) {
+  var calledCount = 0;
+  return function(arg1, arg2) {
+    calledCount += 1;
+    if (calledCount <= times) {
+      return binaryFunc(arg1, arg2);
+    }
+    return undefined;
+  };
+}
+
+myPubSub.subscribe(function(x) {
+  console.log("sub1::", x);
+});
+
+myPubSub.subscribe(
+  limit(function() {
+    myPubSub.publish("Out of order");
+  }, 1)
+);
+
+myPubSub.subscribe(function(x) {
+  console.log("sub2::", x);
+});
+
+myPubSub.subscribe(function(x) {
+  console.log("sub3::", x);
+});
+
+myPubSub.publish("hurry");
+
+// fix
+// function pubsub() {
+//   var _subscribers = [];
+//   return Object.freeze({
+//     subscribe: function(callback) {
+//       _subscribers.push(callback);
+//     },
+//     publish: function(message) {
+//       // now we avoid using index to iterate the _subscribers
+//       _subscribers.forEach(function(s) {
+//         try {
+//           setTimeout(function() {
+//             s(message);
+//           }, 0);
+//         } catch (ignore) {}
+//       });
+//     }
+//   });
+// }
