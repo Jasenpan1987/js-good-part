@@ -1154,3 +1154,128 @@ function pubsub() {
   });
 }
 ```
+
+# 8. Async funcions
+
+## 8.1 Threading
+
+Pros:
+
+- No rethinking is required
+- Blocking programs are ok
+- Execution is continued as long as any thread is not blocked
+
+Cons:
+
+- Stack memory per thread
+- If two or more thread uses the same memory, a race may occur
+
+## 8.2 Event loop
+
+Pros:
+
+- Completely free of races and deadlocks
+- Only one stack
+- Very low overhead
+- If a turn failed, the program can still run
+
+Cons:
+
+- Programs must never block
+- Turn must finishes quickly
+- Programs are inside out
+
+## 8.3 Test async functions
+
+`assert(message, expect, actual)` pattern won't work for async functions.
+
+Insead, we use the "Quick check" patt from the Haskell comunity.
+
+### 8.3.1 JSCheck
+
+- case generation
+- testing over turns
+- `JSC.claim(name, predicate, signature)`
+- `JSC.check(milliseconds)`
+- `JSC.on_report(callback)`
+- `JSC.on_error(callback)`
+
+# 9. Javascript the better part
+
+## 9.1 New ES6 good features
+
+### 9.1.1 Tail calls
+
+`return func();`
+
+- runs faster
+- less memory
+- compiler support
+
+### 9.1.2 Ellipsis
+
+```js
+function curry(func, ...first) {
+  return function(...second) {
+    return func(...first, ...second);
+  };
+}
+```
+
+Is much more concise than
+
+```js
+function curry(func) {
+  var args = Array.prototype.slice.call(arguments, 1);
+  return function() {
+    return func.apply(
+      null,
+      args.concat(Array.prototype.slice.call(arguments, 0))
+    );
+  };
+}
+```
+
+### 9.1.3 Modules
+
+```js
+import React from "react";
+```
+
+### 9.1.4 let and const
+
+- let gives javascript variables block scope
+- const is NOT equal to Object.freeze()
+
+### 9.1.5 Destructuring
+
+- `let {foo, bar} = myObj;`
+- easier and cleaner
+
+### 9.1.6 WeakMap
+
+- it is what Object should be
+- more memory efficient
+- better garbagge collection
+
+### 9.1.7 Arraow functions
+
+```js
+name => ({ id: name }); // add () if you want to return an object
+```
+
+## 9.2 Class Free classical inheritance
+
+```js
+function constructor(spec) {
+  let { member } = spec;
+  let { other } = other_constructor(spec);
+  let method = function() {
+    // member, other member, method, spec
+  };
+  return Object.freeze({
+    method,
+    other
+  });
+}
+```
